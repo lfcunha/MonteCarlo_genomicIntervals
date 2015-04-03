@@ -1,0 +1,7 @@
+*.p
+*.bed
+clusters.txt
+config
+tmp/
+result/
+data/

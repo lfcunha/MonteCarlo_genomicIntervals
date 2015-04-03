@@ -247,7 +247,7 @@ def start_shuffle(output_file):
         persons_reads = {}
         for result in results:
             for y in result.values()[0]:
-                id = str(next(inc(index)))
+                id = str(index)
                 reads[id] = [str(y[0]), str(y[1]), str(y[2]), str(result.keys()[0])]
                 if str(result.keys()[0]) not in persons_reads: persons_reads[str(result.keys()[0])] = []
                 persons_reads[str(result.keys()[0])].append(id)

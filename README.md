@@ -4,7 +4,7 @@
 The shuffling phase can be parallelized - select number of threads to equal or less than the number of individuals.
 
 Dependencies:
-  - Invidual's bedfile
+  - Individual's bedfile containing the genomic intervals
   - refSeq gene locations
   - refseq Chromosome positions
 <p>These files must be present in a /data directory</p>

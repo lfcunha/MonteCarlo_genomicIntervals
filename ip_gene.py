@@ -15,7 +15,9 @@ from multiprocessing import Pool
 import readIntervals as ri
 import json
 import argparse
- 
+import pprint 
+
+pp = pprint.PrettyPrinter(indent=4)
  
 """
 Perform Monte Carlo simulation to permutate a list of genomic segments and calculate the proportion of intervals
@@ -82,8 +84,8 @@ class IntervalTreeDict(object):
  
                 tree.add(segment_start, segment_end, tuple(segmentProperties[:4]))
  
-    @property
-    def interval_tree(self, chromosome, start, end):
+   
+    def find(self, chromosome, start, end):
         return self.interval_tree_dict[chromosome].find(start, end)
  
  
@@ -96,10 +98,15 @@ class InitializeIntervals:
    """
  
     def __init__(self):
-        self.positionArray = pickle.load(open(BASE_DIR + '/data/'+ REFSEQ_POSITION_ARRAY, 'rb'))
-        self.chrArray = pickle.load(open(BASE_DIR + '/data/' + CHRM_SIZE_REFSEQ_POSITION_ARRAY, 'rb'))
-        self.individuals = self.load_intervals_all_individuals()
- 
+	try:
+        	self.positionArray = pickle.load(open(BASE_DIR + '/data/'+ REFSEQ_POSITION_ARRAY, 'rb'))
+        	self.chrArray = pickle.load(open(BASE_DIR + '/data/' + CHRM_SIZE_REFSEQ_POSITION_ARRAY, 'rb'))
+        	self.individuals = self.load_intervals_all_individuals()
+ 	except:
+		print "failed loading required files RefSeq Array, Chr Array, or individual intervals"
+		sys.exit(0)
+
+
     def load_intervals_all_individuals(self):
         """
        :return all interval dictionary:
@@ -139,11 +146,14 @@ def find_chr_from_array_position(position):
     """
    :param position:
    :return chromosome:
+   >>> find_chr_from_array_position(46968736)
+   12
    """
-    result = refSeq_positions_dictionary.interval_tree("1", position, position)
+    result = refSeq_chromosome_tree.find("1", position, position)
     try:
         chromosome = int(result[0][3].strip())
-        return chromosome
+        print "1", position, chromosome
+	return chromosome
     except KeyError:
         print "Position out of range: ", position
         return 0
@@ -156,18 +166,43 @@ def test_shuffled_interval_overlap(intervals):
    purely random shuffle)
    :param intervals:
    :return: True if no overlap, False if overlap
+   >>> test_shuffled_interval_overlap({50968446: 67782986})
+   True
    """
-    result = {}
+    print "testing"
+    print intervals
+    results = {}
     for interval in intervals.values()[0]:
         try:
             chromosome = interval[0]
-            if chromosome not in result:
-                result[chromosome] = {}
-            result[chromosome][interval[1]] = interval[2]
+            if chromosome not in results:
+                results[chromosome] = {}
+            results[chromosome][interval[1]] = interval[2]
         except:
             pass                                   #Do not interrupt due to any exception. Continue to the next interval
- 
+    #print "res: ", results
+    for chromosome in results:
+	intervals = results[chromosome]
+        ordered_intervals = collections.OrderedDict(sorted(intervals.items()))
+        starts=[]
+        ends=[]
+	#print "od", ordered_intervals
+	[(starts.append(start_), ends.append(end_)) for start_, end_ in ordered_intervals.items()]
+        #for start,end in ordered_intervals.items():
+        #	print start, end
+	#        starts.append(start)
+        #        ebdss.append(end)
+
+        for x in range(0, len(starts)-1):
+                if int(starts[x+1])<int(ends[x]):
+                        print "reject", starts, ends
+                        return False
+    print "accept", starts, ends
+    print intervals
+    return True
+"""
     for start, end in result:
+	print start, end
         orderedItems = collections.OrderedDict(sorted(end.items()))
         start_list = []
         end_list = []
@@ -178,8 +213,9 @@ def test_shuffled_interval_overlap(intervals):
             if start_list[interval + 1] < end_list[interval]:
                 print "Overlapped Intervals: reject and repeat shuffle\n"
                 return False
+    print "ok"
     return True
- 
+"""
  
 def shuffle(individual_intervals):
     """Shuffle the position of every interval:
@@ -188,27 +224,30 @@ def shuffle(individual_intervals):
       regions of the exome. Specifically, those regions covered by the capture probes
       - intervals of each individual are shuffled together, with each individual shuffled in parallel in a separate
        thread
- 
+    individual_intervals format: {indID:[{chr:length}, {chr:length}]}
+   
    :param individual_intervals:
    :return shuffled intervals:
    """
     print "running parallel process"
+    #pp.pprint(individual_intervals)
     random.seed()                         #set seed on each thread to avoid same random number generation on the threads
     time.sleep(random.randint(0, 9))
     intervals = {individual_intervals[0]: []}
- 
+
     for interval in individual_intervals[1]:
         randomPosition = random.randint(0, EXOME_ARRAY_LENGTH)
-        start = positionArray[randomPosition]
-        end = start + int(interval.values()[0])
-        chromosome = find_chr_from_array_position(randomPosition)
+	start = positionArray[randomPosition]
+	end = start + int(interval.values()[0]) #length
+	chromosome = find_chr_from_array_position(randomPosition)
         intervals[individual_intervals[0]].append((chromosome, start, end))
         if chromosome not in COUNT_SHUFFLE: COUNT_SHUFFLE[chromosome] = 0
         COUNT_SHUFFLE[chromosome] += 1
- 
-    if test_shuffled_interval_overlap(intervals):                                            #if segments do not overlap
+#	pp.pprint(interval)
+    
+    if test_shuffled_interval_overlap(intervals) == True:                                            #if segments do not overlap
         """log the distribution of random intervals"""
-        with open(BASE_DIR + "tmp/shuffled_intervals.json", "a") as outfile:
+        with open(BASE_DIR + "/tmp/shuffled_intervals.json", "a") as outfile:
             json.dump(intervals, outfile)
             outfile.write("\n")
         return intervals
@@ -223,7 +262,7 @@ def inc(i):
     yield i + 1
  
  
-def start_shuffle(output_file):
+def start_shuffle(output_file,np):
     """Initiate parallel threads for interval shuffling phase
    :param output_file:
    :return 0:
@@ -232,15 +271,19 @@ def start_shuffle(output_file):
     starttime = time.time()
     individualIntervals = allIndividuals.items()
     try:
-        print "starting parallel shuffle"
-        pool = Pool(8)
+        print "starting parallel shuffle..."
+	pool = Pool(np)
         results = pool.map(shuffle, individualIntervals)
-        pool.close()
+    #    results = map(shuffle, individualIntervals)
+	print "pool finished\n"
+	print str(results)
+	pool.close()
         pool.join()
     except:
         os.nice(100)
         pass
     else:
+	print "bbb"
         print "finished shuffling phase. Starting overlap analysis"
         elapsedtime = time.time() - starttime
         reads = {}
@@ -264,6 +307,7 @@ def start_shuffle(output_file):
         genes = {}
         for read in reads:
             l = reads[read]
+	    print l
             a = refseq_gene_tree.interval_tree(l[0], int(l[1]), int(l[2]))
             for result in a:
                 b = result[3][:-1]
@@ -290,15 +334,19 @@ def start_shuffle(output_file):
  
 """load global arrays and intervals"""
  
-print "Loading refseq trees"
-refSeq_positions_dictionary = IntervalTreeDict(REFSEQ_POSITIONS_ARRAY)
+refSeq_chromosome_tree = IntervalTreeDict(REFSEQ_POSITIONS_ARRAY)
 refseq_gene_tree = IntervalTreeDict(REFSEQ_GENES_BEDFILE)
-print "Loading Individuals, positionsArray, and chromosomeArray"
-initialize = InitializeIntervals()
-allIndividuals = initialize._individuals
-positionArray = initialize.positionArray
-chrArray = initialize.chrArray
- 
+
+#load required files(arrays, intervals)
+try:
+	print "Loading Individuals, positionsArray, and chromosomeArray"
+	initialize = InitializeIntervals()
+	allIndividuals = initialize._individuals
+	positionArray = initialize.positionArray
+	chrArray = initialize.chrArray
+except:
+	print "failed initialization"
+	sys.exit(0)
  
 def usage():
     print "shuffle python shuffle5.py -n <number of steps> -o <output file>"
@@ -311,16 +359,20 @@ def main():
     parser.add_argument('-o', '--output', help='output file')
     parser.add_argument('-v', dest='verbose', action='store_true')
     parser.add_argument('-nRuns', '--numberRuns', help='number of simulation steps')
+    parser.add_argument('-np', '--n_processors', help="number of threads")
     args = parser.parse_args()
     nRuns = int(args.numberRuns)
+    np = int(args.n_processors)
     output = BASE_DIR + "/result/" + args.output
- 
+
+
+
     print "Starting...\n"
  
     while nRuns > 0:
         try:
             print "Iteration " + str(nRuns)
-            start_shuffle(output)
+            start_shuffle(output, np)
             print "finished iteration " + str(nRuns) + "\n"
             nRuns -= 1
         except:                                          #If any exception occurs, continue with next step of simulation
@@ -330,4 +382,6 @@ def main():
  
  
 if __name__ == "__main__":
+    import doctest
+    print doctest.testmod()
     main()

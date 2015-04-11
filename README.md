@@ -3,5 +3,12 @@
 
 The shuffling phase can be parallelized - select number of threads to equal or less than the number of individuals.
 
+Dependencies:
+  - Invidual's bedfile
+  - refSeq gene locations
+  - refseq Chromosome positions
+These files must be present in a /data directory
+
+
 Usage:
 <p><code>./ip_gene.py -np <number of threads> -nRuns <number of steps> -o <output file> </code></p>

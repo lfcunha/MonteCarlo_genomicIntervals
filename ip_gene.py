@@ -180,7 +180,6 @@ def test_shuffled_interval_overlap(intervals):
             results[chromosome][interval[1]] = interval[2]
         except:
             pass                                   #Do not interrupt due to any exception. Continue to the next interval
-    #print "res: ", results
     for chromosome in results:
 	intervals = results[chromosome]
         ordered_intervals = collections.OrderedDict(sorted(intervals.items()))
@@ -188,10 +187,6 @@ def test_shuffled_interval_overlap(intervals):
         ends=[]
 	#print "od", ordered_intervals
 	[(starts.append(start_), ends.append(end_)) for start_, end_ in ordered_intervals.items()]
-        #for start,end in ordered_intervals.items():
-        #	print start, end
-	#        starts.append(start)
-        #        ebdss.append(end)
 
         for x in range(0, len(starts)-1):
                 if int(starts[x+1])<int(ends[x]):
@@ -200,22 +195,6 @@ def test_shuffled_interval_overlap(intervals):
     print "accept", starts, ends
     print intervals
     return True
-"""
-    for start, end in result:
-	print start, end
-        orderedItems = collections.OrderedDict(sorted(end.items()))
-        start_list = []
-        end_list = []
-        for interval, end_ in orderedItems.items:
-            start_list.append(interval)
-            end_list.append(end_)
-        for interval in range(0, len(a) - 1):
-            if start_list[interval + 1] < end_list[interval]:
-                print "Overlapped Intervals: reject and repeat shuffle\n"
-                return False
-    print "ok"
-    return True
-"""
  
 def shuffle(individual_intervals):
     """Shuffle the position of every interval:
@@ -230,7 +209,6 @@ def shuffle(individual_intervals):
    :return shuffled intervals:
    """
     print "running parallel process"
-    #pp.pprint(individual_intervals)
     random.seed()                         #set seed on each thread to avoid same random number generation on the threads
     time.sleep(random.randint(0, 9))
     intervals = {individual_intervals[0]: []}
@@ -243,7 +221,6 @@ def shuffle(individual_intervals):
         intervals[individual_intervals[0]].append((chromosome, start, end))
         if chromosome not in COUNT_SHUFFLE: COUNT_SHUFFLE[chromosome] = 0
         COUNT_SHUFFLE[chromosome] += 1
-#	pp.pprint(interval)
     
     if test_shuffled_interval_overlap(intervals) == True:                                            #if segments do not overlap
         """log the distribution of random intervals"""
@@ -253,13 +230,6 @@ def shuffle(individual_intervals):
         return intervals
     else:
         shuffle(individual_intervals)
- 
-def inc(i):
-    """Generator to increment id used in start_shuffle
-   :param i:
-   :return:
-   """
-    yield i + 1
  
  
 def start_shuffle(output_file,np):
@@ -274,7 +244,6 @@ def start_shuffle(output_file,np):
         print "starting parallel shuffle..."
 	pool = Pool(np)
         results = pool.map(shuffle, individualIntervals)
-    #    results = map(shuffle, individualIntervals)
 	print "pool finished\n"
 	print str(results)
 	pool.close()

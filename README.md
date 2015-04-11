@@ -7,7 +7,7 @@ Dependencies:
   - Invidual's bedfile
   - refSeq gene locations
   - refseq Chromosome positions
-These files must be present in a /data directory
+<p>These files must be present in a /data directory</p>
 
 
 Usage:

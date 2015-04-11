@@ -11,4 +11,4 @@ Dependencies:
 
 
 Usage:
-<p><code>"./ip_gene.py -np \<number of threads\> -nRuns \<number of steps\> -o \<output file\> "</code></p>
+<p><code>./ip_gene.py -np number_of_threads -nRuns number_of_steps -o output_file </code></p>

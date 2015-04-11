@@ -7,8 +7,10 @@ Dependencies:
   - Individual's bedfile containing the genomic intervals
   - refSeq gene locations
   - refseq Chromosome positions
-<p>These files must be present in a /data directory</p>
+<p>These files must be present in a MonteCarlo_genomicIntervals/data directory</p>
 
 
 Usage:
 <p><code>./ip_gene.py -np number_of_threads -nRuns number_of_steps -o output_file </code></p>
+
+
